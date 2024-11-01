@@ -1,6 +1,6 @@
 # derive(Description)
 
-This library provides a trait and derive macro that is like [``], but using compile-time strings.
+This library provides a trait and derive macro that is like [`std::fmt::Display`](https://doc.rust-lang.org/std/fmt/trait.Display.html), but using compile-time strings.
 
 The library is fully `no_std` and `no_alloc`, and is meant to provide user-facing text for enum-like status messages without code bloat.
 
