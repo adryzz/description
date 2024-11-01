@@ -1,11 +1,6 @@
 extern crate proc_macro;
-use core::hash;
-use std::collections::HashMap;
-
 use proc_macro::TokenStream;
-use proc_macro2::{Literal, Span, TokenTree};
-use quote::{format_ident, ToTokens};
-use syn::{parse_macro_input, spanned::Spanned, Data, DataEnum, DataStruct, DeriveInput, Error, Expr, Ident, Meta, Result };
+use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, Expr, Ident, Result};
 
 #[proc_macro_derive(Description, attributes(description))]
 pub fn derive_description(input: TokenStream) -> TokenStream {
@@ -20,7 +15,7 @@ pub fn derive_description(input: TokenStream) -> TokenStream {
 fn try_expand(input: &DeriveInput) -> Result<TokenStream> {
     match &input.data {
         Data::Enum(e) => Ok(impl_enum(&input.ident, e)?),
-        _ => Err(Error::new_spanned(input, "Description cannot be implemented on unions"))
+        _ => Err(Error::new_spanned(input, "Description cannot be implemented on structs or unions"))
     }
 }
 
@@ -69,7 +64,7 @@ pub fn derive_optional_description(input: TokenStream) -> TokenStream {
 fn try_expand_optional(input: &DeriveInput) -> Result<TokenStream> {
     match &input.data {
         Data::Enum(e) => Ok(impl_enum_optional(&input.ident, e)?),
-        _ => Err(Error::new_spanned(input, "Description cannot be implemented on unions"))
+        _ => Err(Error::new_spanned(input, "Description cannot be implemented on structs or unions"))
     }
 }
 

@@ -4,14 +4,14 @@ version = 3
 
 [[package]]
 name = "description"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "description-macro",
 ]
 
 [[package]]
 name = "description-macro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
