@@ -2,6 +2,13 @@
 name = "description-macro"
 version = "0.1.0"
 edition = "2021"
+authors = ["Lena <lena@nihil.gay>"]
+categories = ["rust-patterns"]
+description = "implementation detail of the `description` crate"
+documentation = "https://docs.rs/description-impl"
+keywords = ["derive", "display", "no-std"]
+license = "MIT"
+repository = "https://github.com/adryzz/description"
 
 [dependencies]
 quote = "1.0.37"
