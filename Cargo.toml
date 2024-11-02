@@ -1,6 +1,6 @@
 [package]
 name = "description"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Lena <lena@nihil.gay>"]
 categories = ["rust-patterns", "no-std", "no-std::no-alloc"]
@@ -11,9 +11,11 @@ license = "MIT"
 repository = "https://github.com/adryzz/description"
 
 [dependencies]
-description-macro = { version = "=0.2.0", path = "description-macro" }
-
-[dev-dependencies]
+description-macro = { version = "=0.3.0", path = "description-macro" }
+const_format = { version = "0.2.33", optional = true }
 
 [workspace]
 members = ["description-macro"]
+
+[features]
+format = ["description-macro/format", "dep:const_format"]

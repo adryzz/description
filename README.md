@@ -6,7 +6,7 @@ The library is fully `no_std` and `no_alloc`, and is meant to provide user-facin
 
 ```toml
 [dependencies]
-description = "0.1.0"
+description = "0.3.0"
 ```
 
 ## Example

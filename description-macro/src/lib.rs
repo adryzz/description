@@ -1,6 +1,6 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, ExprLit, Ident, Result};
+use syn::{parse_macro_input, Attribute, Data, DataEnum, DeriveInput, Error, Ident, LitStr, Result};
 
 #[proc_macro_derive(Description, attributes(description))]
 pub fn derive_description(input: TokenStream) -> TokenStream {
@@ -26,11 +26,9 @@ fn impl_enum(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
         .find(|x| x.path().is_ident("description"))
         .ok_or(syn::Error::new_spanned(variant, "Missing 'description' attribute"))?;
 
-        let segment: ExprLit = attr.parse_args()?;
-        let ident = &variant.ident;
-        vec.push(quote::quote! {
-            Self::#ident => #segment,
-        });
+        let result: Result<LitStr> = attr.parse_args();
+
+        vec.push(parse_args(&variant.ident, result, attr)?);
     }
 
     Ok(quote::quote! {
@@ -42,6 +40,33 @@ fn impl_enum(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
             }
         }
     }.into())
+}
+
+fn parse_args(variant_ident: &Ident, result: Result<LitStr>, attr: &Attribute) -> Result<proc_macro2::TokenStream> {
+    
+    let format = if let Ok(v) = result.clone() {
+        v.value().contains('{')
+        // use format logic
+    } else {true};
+
+    if format {
+        #[cfg(feature = "format")]
+        {
+            let args: proc_macro2::TokenStream = attr.parse_args()?;
+            Ok(quote::quote! {
+                Self::#variant_ident => ::const_format::formatcp!(#args),
+            })
+        }
+
+        #[cfg(not(feature = "format"))]
+        Err(result.err().unwrap())
+        // TODO: give a better error if the user is trying to use format without the proper feature flag
+    } else {
+        let segment = result.unwrap();
+        Ok(quote::quote! {
+            Self::#variant_ident => #segment,
+        })
+    }
 }
 
 #[proc_macro_derive(OptionalDescription, attributes(description))]
@@ -68,14 +93,12 @@ fn impl_enum_optional(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
         let attr = variant.attrs.iter()
         .find(|x| x.path().is_ident("description"));
 
-        let segment: Option<ExprLit> = attr.map(|x| x.parse_args()).transpose()?;
+        let segment: Option<Result<LitStr>> = attr.map(|x| x.parse_args());
 
         let ident = &variant.ident;
         match segment {
-            Some(l) => {
-                vec.push(quote::quote! {
-                    Self::#ident => Some(#l),
-                });
+            Some(result) => {
+                vec.push(parse_args(&variant.ident, result, attr.unwrap())?);
             },
             None => {
                 vec.push(quote::quote! {
