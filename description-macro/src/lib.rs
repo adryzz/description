@@ -1,11 +1,11 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, Expr, Ident, Result};
+use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, ExprLit, Ident, Result};
 
 #[proc_macro_derive(Description, attributes(description))]
 pub fn derive_description(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    
+
     match try_expand(&input) {
         Ok(expanded) => expanded,
         Err(error) => error.to_compile_error().into(),
@@ -21,23 +21,16 @@ fn try_expand(input: &DeriveInput) -> Result<TokenStream> {
 
 fn impl_enum(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
     let mut vec = Vec::with_capacity(input.variants.len());
-
     for variant in &input.variants {
         let attr = variant.attrs.iter()
-        .filter(|x| x.path().is_ident("description"))
-        .nth(0).ok_or(syn::Error::new_spanned(variant, "Missing 'description' attribute"))?;
+        .find(|x| x.path().is_ident("description"))
+        .ok_or(syn::Error::new_spanned(variant, "Missing 'description' attribute"))?;
 
-        let segment: Expr = attr.parse_args().unwrap();
-
-        match segment {
-            Expr::Lit(l) => {
-                let ident = &variant.ident;
-                vec.push(quote::quote! {
-                    Self::#ident => #l,
-                });
-            },
-            _ => return Err(syn::Error::new_spanned(segment, "Expected literal, provided expression"))
-        }
+        let segment: ExprLit = attr.parse_args()?;
+        let ident = &variant.ident;
+        vec.push(quote::quote! {
+            Self::#ident => #segment,
+        });
     }
 
     Ok(quote::quote! {
@@ -73,14 +66,13 @@ fn impl_enum_optional(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
 
     for variant in &input.variants {
         let attr = variant.attrs.iter()
-        .filter(|x| x.path().is_ident("description"))
-        .nth(0);
+        .find(|x| x.path().is_ident("description"));
 
-        let segment: Option<Expr> = attr.map(|x| x.parse_args().unwrap());
+        let segment: Option<ExprLit> = attr.map(|x| x.parse_args()).transpose()?;
 
         let ident = &variant.ident;
         match segment {
-            Some(Expr::Lit(l)) => {
+            Some(l) => {
                 vec.push(quote::quote! {
                     Self::#ident => Some(#l),
                 });
@@ -90,7 +82,6 @@ fn impl_enum_optional(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
                     Self::#ident => None,
                 });
             }
-            _ => return Err(syn::Error::new_spanned(segment, "Expected literal, provided expression"))
         }
     }
 
