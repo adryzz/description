@@ -1,5 +1,6 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
+use quote::ToTokens;
 use syn::{parse_macro_input, Attribute, Data, DataEnum, DeriveInput, Error, Ident, LitStr, Result};
 
 #[proc_macro_derive(Description, attributes(description))]
@@ -28,7 +29,9 @@ fn impl_enum(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
 
         let result: Result<LitStr> = attr.parse_args();
 
-        vec.push(parse_args(&variant.ident, result, attr)?);
+        let var = parse_args(result, attr)?;
+        let ident = &variant.ident;
+        vec.push(quote::quote! { Self::#ident => #var, });
     }
 
     Ok(quote::quote! {
@@ -42,7 +45,7 @@ fn impl_enum(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
     }.into())
 }
 
-fn parse_args(variant_ident: &Ident, result: Result<LitStr>, attr: &Attribute) -> Result<proc_macro2::TokenStream> {
+fn parse_args(result: Result<LitStr>, attr: &Attribute) -> Result<proc_macro2::TokenStream> {
     
     let format = if let Ok(v) = result.clone() {
         v.value().contains('{')
@@ -54,7 +57,7 @@ fn parse_args(variant_ident: &Ident, result: Result<LitStr>, attr: &Attribute) -
         {
             let args: proc_macro2::TokenStream = attr.parse_args()?;
             Ok(quote::quote! {
-                Self::#variant_ident => ::const_format::formatcp!(#args),
+                ::const_format::formatcp!(#args)
             })
         }
 
@@ -73,9 +76,7 @@ fn parse_args(variant_ident: &Ident, result: Result<LitStr>, attr: &Attribute) -
         // TODO: give a better error if the user is trying to use format without the proper feature flag
     } else {
         let segment = result.unwrap();
-        Ok(quote::quote! {
-            Self::#variant_ident => #segment,
-        })
+        Ok(segment.to_token_stream())
     }
 }
 
@@ -108,7 +109,9 @@ fn impl_enum_optional(ident: &Ident, input: &DataEnum) -> Result<TokenStream> {
         let ident = &variant.ident;
         match segment {
             Some(result) => {
-                vec.push(parse_args(&variant.ident, result, attr.unwrap())?);
+                let var = parse_args(result, attr.unwrap())?;
+                let ident = &variant.ident;
+                vec.push(quote::quote! { Self::#ident => Some(#var), });
             },
             None => {
                 vec.push(quote::quote! {
