@@ -59,7 +59,17 @@ fn parse_args(variant_ident: &Ident, result: Result<LitStr>, attr: &Attribute) -
         }
 
         #[cfg(not(feature = "format"))]
-        Err(result.err().unwrap())
+        {
+            // check if the first argument is a string literal containing curly brackets
+            let args: proc_macro2::TokenStream = attr.parse_args()?;
+            let str = args.into_iter()
+            .next().map(|s| s.to_string().contains('{'));
+
+            match str {
+                Some(true) => Err(Error::new_spanned(attr, "You need the 'format' feature to use format arguments")),
+                _ => Err(result.err().unwrap())
+            }
+        }
         // TODO: give a better error if the user is trying to use format without the proper feature flag
     } else {
         let segment = result.unwrap();

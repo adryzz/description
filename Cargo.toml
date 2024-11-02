@@ -18,4 +18,5 @@ const_format = { version = "0.2.33", optional = true }
 members = ["description-macro"]
 
 [features]
+default = ["format"]
 format = ["description-macro/format", "dep:const_format"]
