@@ -29,3 +29,25 @@ fn main() {
     println!("Charger notification: {}", charger.description());
 }
 ```
+[`std::fmt::format!()`](https://doc.rust-lang.org/std/macro.format.html)-like compile time formatting is also supported, thanks to [`const_format`](https://crates.io/crates/const_format/)
+
+```rust
+use description::Description;
+
+const SOME_CONSTANT: usize = 5;
+
+#[derive(Description)]
+enum SomeStatusEnum {
+    #[description("the constant is {SOME_CONSTANT}, and the max u32 is {}", u32::MAX)]
+    ShowConstant,
+
+    #[description("i'm not showing the constant")]
+    DontShowConstant,
+}
+
+fn main() {
+    let charger = SomeStatusEnum::ShowConstant;
+
+    println!("enum message: {}", charger.description());
+}
+```
